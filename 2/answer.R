@@ -10,6 +10,7 @@ forward 2"
 
 input <- readr::read_delim("2/input.txt", col_names = FALSE, col_types = "ci")
 
+
 one <- input %>%
     mutate(
         axis = if_else(X1 == "forward", "horizontal", "vertical"),
