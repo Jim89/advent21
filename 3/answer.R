@@ -1,3 +1,7 @@
+library(purrr)
+library(stringr)
+library(readr)
+
 x <- "00100
 11110
 10110
@@ -11,18 +15,62 @@ x <- "00100
 00010
 01010"
 
-library(tidyverse)
-test_mat <- x %>%
-    read_lines() %>%
-    map(str_split, pattern = "", simplify = T) %>%
-    map(as.integer) %>%
-    do.call(rbind, .)
+reader <- function(.in) {
+    .in %>%
+        readr::read_lines() %>%
+        map(stringr::str_split, pattern = "", simplify = TRUE) %>%
+        map(as.integer) %>%
+        do.call(rbind, .)
+}
 
-sums <- apply(test_mat, 2, sum)
-gamma <- strtoi(paste0(as.integer(sums >= nrow(test_mat) / 2), collapse = ""), base = 2)
-epsilon <- strtoi(paste0(as.integer(sums <= nrow(test_mat) / 2), collapse = ""), base = 2)
-gamma * epsilon
+test_mat <- reader(x)
+mat <- reader("3/input.txt")
 
-mat <- "3/input.txt" %>% 
-    read_lines() %>% 
-    map(str_split, "", simplify = T)
+most_common <- function(.x) {
+    counts <- rev(table(.x))
+    names(counts)[which.max(counts)]
+}
+
+least_common <- function(.x) {
+    counts <- table(.x)
+    names(counts)[which.min(counts)]
+}
+
+power_consumption <- function(.mat) {
+    f <- function(x, .c) {
+        x %>%
+            apply(2,.c) %>%
+            paste0(collapse = "") %>%
+            strtoi(base = 2)
+    }
+    gamma <- f(.mat, most_common)
+    epsilon <- f(.mat, least_common)
+    gamma * epsilon
+}
+
+power_consumption(test_mat)
+power_consumption(mat)
+
+
+# Part 2 ------------------------------------------------------------------
+find_ <- function(.mat, start = 1, comparison) {
+    .c <- apply(.mat[, start, drop = FALSE], 2, comparison)
+    new_mat <- .mat[.mat[, start] == .c, ,drop = FALSE]
+    if (nrow(new_mat) == 1) {
+        strtoi(paste0(new_mat[1, ], collapse = ""), base = 2)
+    } else {
+        find_(new_mat, start + 1, comparison)
+    }
+}
+
+find_oxygen <- function(.mat, start = 1) {
+    find_(.mat, start, most_common)
+}
+
+find_co2 <- function(.mat, start = 1) {
+    find_(.mat, start, least_common)
+}
+
+find_oxygen(test_mat) * find_co2(test_mat)
+find_oxygen(mat) * find_co2(mat)
+
