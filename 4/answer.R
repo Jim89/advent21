@@ -10,20 +10,19 @@ read_draws <- function(.input = "4/sample.txt") {
         as.integer()
 }
 
-
 read_board <- function(.which = 1, .input = "4/sample.txt") {
     which <- .which -1
     skip <- (which * 6) + 2
     .input |>
-        readr::read_lines(skip = skip, n_max = 5) |>
-        purrr::map(stringr::str_replace_all, "\\s+", " ") |>
-        purrr::map(stringr::str_split, pattern = " ", simplify = TRUE) |>
-        purrr::map(as.integer) |>
+        read_lines(skip = skip, n_max = 5) |>
+        map(str_replace_all, "\\s+", " ") |> # Some lines have multiple spaces between numbers
+        map(str_split, pattern = " ", simplify = TRUE) |>
+        map(as.integer) |>
         {\(x) do.call(rbind, x)}()
 }
 
 read_boards <- function(.input = "4/sample.txt") {
-    nboards <- (length(readLines(.input)) - 1) / 6
+    nboards <- (length(read_lines(.input)) - 1) / 6
     map(seq_len(nboards), read_board, .input = .input)
 }
 
@@ -58,6 +57,9 @@ score_board <- function(board, matches, drawn) {
 
 play_bingo <- function(draws, boards, scoreboards, first = TRUE) {
     for (i in seq_along(draws)) {
+        # If there's only one board (left), take the first winner (it), when it happens!
+        if (length(boards) == 1) first <- TRUE
+
         draw <- draws[[i]]
         scoreboards <- draw |>
             match_draw(boards) |>
@@ -65,29 +67,36 @@ play_bingo <- function(draws, boards, scoreboards, first = TRUE) {
 
         is_bingo <- bingo(scoreboards)
 
-        if ( any(is_bingo) ) {
+        if (first) {
+            if ( any(is_bingo) ) {
 
-            bingo_board <- boards[[which(is_bingo)]]
-            matches <- scoreboards[[which(is_bingo)]]
+                bingo_board <- boards[[which(is_bingo)]]
+                matches <- scoreboards[[which(is_bingo)]]
 
-            score <- score_board(bingo_board, matches, draw)
+                score <- score_board(bingo_board, matches, draw)
 
-            return(
-                list(
-                    draw = draw,
-                    score = score,
-                    board = bingo_board,
-                    mask = matches,
-                    i = i
+                return(
+                    list(
+                        draw = draw,
+                        score = score,
+                        board = bingo_board,
+                        mask = matches,
+                        i = i
+                    )
                 )
-            )
+            }
+        } else {
+            # Remove winners, and continue
+            boards <- boards[!is_bingo]
+            scoreboards <- scoreboards[!is_bingo]
         }
     }
 }
 
 
-draws <- read_draws("4/sample.txt")
-boards <- read_boards("4/sample.txt")
+draws <- read_draws("4/input.txt")
+boards <- read_boards("4/input.txt")
 scoreboards <- create_scoreboards(boards)
-out <- play_bingo(draws, boards, scoreboards)
+out <- play_bingo(draws, boards, scoreboards, first = F)
 out
+
