@@ -1,7 +1,7 @@
 starting_fish <- function(.input) scan(.input, what = integer(0), sep = ",")
 
 sim_days <- function(.fish, days = 10) {
-    all_freqs <- sapply(0:8, \(x) length(which(.fish == x)))
+    all_freqs <- as.double(sapply(0:8, \(x) length(which(.fish == x))))
     for (i in seq_len(days)) {
         n_new <- all_freqs[[1]]
         all_freqs[1:8] <- all_freqs[2:9]
@@ -12,9 +12,10 @@ sim_days <- function(.fish, days = 10) {
 }
 
 
+fish <- starting_fish("6/input.txt")
 .days <- 80
-fish <- starting_fish("6/sample.txt")
 sim_result <- sim_days(fish, .days)
-sum(sim_result)
+options(scipen = 999)
+sum(sim_result, na.rm = TRUE)
 
 
