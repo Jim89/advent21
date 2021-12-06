@@ -20,12 +20,25 @@ sim_days <- function(.fish, days = 10) {
     out
 }
 
+sim_days_out_only <- function(.fish, days = 10) {
+    f <- .fish
+    for (i in seq_len(days)) {
+        new <- sim_day(f)
+        f <- new
+    }
+    new
+}
+
 .days <- 80
 fish <- starting_fish("6/input.txt")
 sim_result <- sim_days(fish, .days)
 length(sim_result[[.days]])
 
+sim_result2 <- sim_days_out_only(fish, .days)
+length(sim_result2)
+
 results <- data.frame(x = 1:length(sim_result), y = sapply(sim_result, length))
 results$diff <- c(0, diff(results$y))
 plot(results$x, results$y)
 plot(results$x, results$diff)
+
