@@ -23,6 +23,6 @@ fuel_spend2 <- function(positions) {
 }
 
 fuel_spend2(initial_positions("7/sample.txt")) # 168
-fuel_spend2(initial_positions("7/input.txt"))
+fuel_spend2(initial_positions("7/input.txt")) # 95167302
 
 
