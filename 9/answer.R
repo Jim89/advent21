@@ -42,24 +42,6 @@ is_low_point <- function(.mat, row, col) {
     risk_level()
 
 
-find_basins <- function(.mat) {
-    # This doesn't work for the input!
-    basins <- matrix(FALSE, nrow(.mat), ncol(.mat))
-    tracker_mat <- .mat
-    complete <- FALSE
-    while (!complete) {
-        lows <- find_low_points(tracker_mat)
-        low_points <- which(!is.na(lows), arr.ind = TRUE)
-        if (nrow(low_points) == 0) {
-            complete <- TRUE
-            #return(basins)
-        }
-        basins[low_points] <- TRUE
-        tracker_mat[low_points] <- 9
-    }
-    return(basins)
-}
-
 top_basins <- function(.mat, n = 3) {
     r <- raster::raster(.mat)
     rc <- raster::clump(r, directions = 4)
@@ -72,3 +54,47 @@ top_basins <- function(.mat, n = 3) {
 mat <- read_matrix("9/input.txt")
 top_basins(mat != 9)
 
+
+
+# -------------------------------------------------------------------------
+
+find_basins <- function(.mat) {
+    # This doesn't work for the input, but I'm not sure why!
+    basins <- matrix(FALSE, nrow(.mat), ncol(.mat))
+    tracker_mat <- .mat
+    complete <- FALSE
+    i <- 1
+    rasters <- NULL
+    while (!complete) {
+        lows <- find_low_points(tracker_mat)
+        low_points <- which(!is.na(lows), arr.ind = TRUE)
+        if (nrow(low_points) == 0) {
+            complete <- TRUE
+            #return(basins)
+        }
+        basins[low_points] <- TRUE
+        tracker_mat[low_points] <- 9
+        rasters[[i]] <- raster(basins)
+        i <- i + 1
+    }
+    return(list(basins, rasters))
+}
+
+tst_mat <- mat[1:10, 1:10]
+me <- find_basins(tst_mat)
+them <- tst_mat < 9
+
+plot(raster(me[[1]]))
+plot(raster(them))
+
+plot(me[[2]][[1]])
+plot(me[[2]][[2]])
+plot(me[[2]][[3]])
+plot(me[[2]][[4]])
+plot(me[[2]][[5]])
+plot(me[[2]][[6]])
+plot(me[[2]][[7]])
+plot(me[[2]][[8]])
+plot(me[[2]][[9]])
+
+# Ok, it's because I don't handle <=, only <
