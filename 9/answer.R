@@ -43,6 +43,7 @@ is_low_point <- function(.mat, row, col) {
 
 
 find_basins <- function(.mat) {
+    # This doesn't work for the input!
     basins <- matrix(FALSE, nrow(.mat), ncol(.mat))
     tracker_mat <- .mat
     complete <- FALSE
@@ -51,15 +52,16 @@ find_basins <- function(.mat) {
         low_points <- which(!is.na(lows), arr.ind = TRUE)
         if (nrow(low_points) == 0) {
             complete <- TRUE
-            return(basins)
+            #return(basins)
         }
         basins[low_points] <- TRUE
         tracker_mat[low_points] <- 9
     }
+    return(basins)
 }
 
-top_basins <- function(basins, n = 3) {
-    r <- raster::raster(basins)
+top_basins <- function(.mat, n = 3) {
+    r <- raster::raster(.mat)
     rc <- raster::clump(r, directions = 4)
 
     clump_counts <- sort(table(as.vector(rc)), decreasing = TRUE)
@@ -67,11 +69,6 @@ top_basins <- function(basins, n = 3) {
 }
 
 
-"9/sample.txt" |>
-    read_matrix() |>
-    find_basins() |>
-    top_basins()
 mat <- read_matrix("9/input.txt")
-
-
+top_basins(mat != 9)
 
