@@ -112,7 +112,10 @@ generate_input_mapping <- function(.input) {
     wires_active_by_digit |>
         unlist() |>
         enframe("digit", "mapping") |>
-        mutate(mapping = unlist(map(mapping, resort)))
+        mutate(
+            mapping = unlist(map(mapping, resort)),
+            digit = ifelse(digit == 10, 0, digit)
+        )
 }
 
 resort <- function(.x) {
@@ -136,9 +139,11 @@ decode_outputs <- function(.line) {
     )
 }
 
-inputs <- read_digits("8/sample.txt")
+inputs <- read_digits("8/input.txt")
 inputs |>
     map_chr(decode_outputs) |>
     map_dbl(as.double) |>
     reduce(`+`)
 
+# 6,804,703
+# 1,031,553
