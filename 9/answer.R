@@ -37,22 +37,13 @@ is_low_point <- function(.mat, row, col) {
     all(value < others)
 }
 
-mat <- read_matrix("9/sample.txt")
-risk_level(mat)
+"9/sample.txt" |>
+    read_matrix() |>
+    risk_level()
 
-orig_mat <- read_matrix("9/sample.txt")
-mat <- read_matrix("9/sample.txt")
-basins <- matrix(FALSE, nrow(mat), ncol(mat))
-
-lows <- find_low_points(mat)
-low_points <- which(!is.na(lows), arr.ind = TRUE)
-
-basin[low_points] <- TRUE
-
-mat[low_points] <- 9
 
 find_basins <- function(.mat) {
-    basins <- matrix(FALSE, nrow(mat), ncol(mat))
+    basins <- matrix(FALSE, nrow(.mat), ncol(.mat))
     tracker_mat <- .mat
     complete <- FALSE
     while (!complete) {
@@ -67,4 +58,20 @@ find_basins <- function(.mat) {
     }
 }
 
-basins <- find_basins(orig_mat)
+top_basins <- function(basins, n = 3) {
+    r <- raster::raster(basins)
+    rc <- raster::clump(r, directions = 4)
+
+    clump_counts <- sort(table(as.vector(rc)), decreasing = TRUE)
+    prod(clump_counts[1:n])
+}
+
+
+"9/sample.txt" |>
+    read_matrix() |>
+    find_basins() |>
+    top_basins()
+mat <- read_matrix("9/input.txt")
+
+
+
