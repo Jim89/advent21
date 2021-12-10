@@ -25,6 +25,7 @@ find_low_points <- function(.mat) {
 
 is_low_point <- function(.mat, row, col) {
     value <- .mat[row, col]
+    if (value >= 9) return(FALSE)
 
     above <- if (row == 1) NA_real_ else .mat[row - 1, col]
     below <- if (row == nrow(.mat)) NA_real_ else .mat[row + 1, col]
@@ -34,10 +35,10 @@ is_low_point <- function(.mat, row, col) {
     others <- c(above, below, left, right)
     others <- others[!is.na(others)]
 
-    all(value < others)
+    all(value <= others)
 }
 
-"9/sample.txt" |>
+"9/input.txt" |>
     read_matrix() |>
     risk_level()
 
@@ -70,21 +71,25 @@ find_basins <- function(.mat) {
         low_points <- which(!is.na(lows), arr.ind = TRUE)
         if (nrow(low_points) == 0) {
             complete <- TRUE
-            #return(basins)
+            return(basins)
         }
         basins[low_points] <- TRUE
         tracker_mat[low_points] <- 9
         rasters[[i]] <- raster(basins)
         i <- i + 1
     }
-    return(list(basins, rasters))
+    return(basins)
 }
+
+mat |>
+    find_basins() |>
+    top_basins()
 
 tst_mat <- mat[1:10, 1:10]
 me <- find_basins(tst_mat)
 them <- tst_mat < 9
 
-plot(raster(me[[1]]))
+plot(raster(me))
 plot(raster(them))
 
 plot(me[[2]][[1]])
