@@ -49,50 +49,7 @@ for ( row_id in seq_len(nrow(has_flashed)) ) {
 }
 
 
-spread_flash_from_point <- function(.flash_point, .flash_mask, .octopi, .other_flashers) {
-    # Get the area around it
-    neighbourhood <- neighbours(.flash_point)
 
-    # That you haven't already been to
-    flashed_already <- neighbourhood |>
-        apply(1, \(neighbour) apply(.other_flashers, 1, \(row) all(row == neighbour))) |>
-        apply(2, any)
-
-    if (all(flashed_already)) {
-        .out <- list(
-            flashes = .flash_mask,
-            octopi = .octopi,
-            other_flashers = .other_flashers
-        )
-        return(.out)
-    }
-
-    neighbourhood <- neighbourhood[!flashed_already, ]
-
-    # Increase the energy in the neighbourhood
-    .octopi[neighbourhood] <- .octopi[neighbourhood] + 1
-
-    # Find new flashing points
-    neighbourhood <- neighbourhood[!is.na(.octopi[neighbourhood]), ] # Deals with NA padding around the edge
-    new_flashes <- neighbourhood[.octopi[neighbourhood] > 9, , drop = FALSE]
-
-    if (nrow(new_flashes) > 0) {
-        .flash_mask[new_flashes] <- TRUE
-        .other_flashers <- rbind(.other_flashers, new_flashes)
-        for (row_id in seq_len(nrow(new_flashes)) ) {
-            .new_point <- new_flashes[row_id, ]
-            .out <- spread_flash_from_point(.new_point, .flash_mask, .octopi, .other_flashers)
-        }
-    } else {
-        .out <- list(
-            flashes = .flash_mask,
-            octopi = .octopi,
-            other_flashers = .other_flashers
-        )
-        return(.out)
-    }
-    return(.out)
-}
 
 count_flashes <- function(input, steps, part2 = FALSE) {
     x <- input
@@ -112,7 +69,8 @@ step1 <- function(x) {
     x <- x + 1
     flashing <- flashed <- x == 10
     while (any(flashing)) {
-        x <- x + add_neigh(flashing)
+        to_increase <- increase_by(flashing)
+        x <- x + to_increase
         flashing <- x > 9 & !flashed
         flashed <- flashing | flashed
     }
@@ -120,22 +78,40 @@ step1 <- function(x) {
     x
 }
 
+increase_by <- function(.flashing) {
+    out <- matrix(0, nrow(.flashing), ncol(flashing))
+    for (row in seq_len(nrow(.flashing))) {
+        for (col in seq_len(ncol(.flashing))) {
+            N <- if (row == 1) NA_real_ else .flashing[row - 1, col]
+            S <- if (row == nrow(.flashing)) NA_real_ else .flashing[row + 1, col]
+            E <- if (col == ncol(.flashing)) NA_real_ else .flashing[row, col + 1]
+            W <- if (col == 1) NA_real_ else .flashing[row, col - 1]
 
-add_neigh <- function(.x) {
-    I <- nrow(.x)
-    J <- ncol(.x)
-    cbind(.x[, -1], 0) +
-    rbind(.x[-1, ], 0) +
-    cbind(0, .x[, -J]) +
-    rbind(0, .x[-I, ]) +
-    rbind(cbind(.x[-1, -1], 0), 0) +
-    rbind(0, cbind(.x[-I, -1], 0)) +
-    rbind(cbind(0, .x[-1, -J]), 0) +
-    rbind(0, cbind(0, .x[-I, -J]))
+            NE <- if (row == 1) NA_real_ else if(col == ncol(.flashing)) NA_real_ else .flashing[row - 1, col + 1]
+            SE <- if (row == nrow(.flashing)) NA_real_ else if(col == ncol(.flashing)) NA_real_ else .flashing[row + 1, col + 1]
+
+            NW <- if (row == 1) NA_real_ else if(col == 1) NA_real_ else .flashing[row - 1, col - 1]
+            SW <- if (row == nrow(.flashing)) NA_real_ else if(col == 1) NA_real_ else .flashing[row - 1, col - 1]
+
+            all <- c(N, S, E, W, NE, SE, SW, NW)
+            out[row, col] <- sum(all, na.rm = TRUE)
+        }
+    }
+    return(out)
 }
 
+
+
 x <- read_matrix("11/sample.txt")
-count_flashes(x, 200)
+count_flashes(x, 100, part2 = FALSE)
 
 x <- read_matrix("11/input.txt")
-count_flashes(x, 10)
+count_flashes(x, 100, FALSE)
+
+x <- read_matrix("11/sample.txt")
+x <- x + 2
+flashing <- x > 9
+
+
+
+
