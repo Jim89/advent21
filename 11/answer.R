@@ -94,14 +94,31 @@ spread_flash_from_point <- function(.flash_point, .flash_mask, .octopi, .other_f
     return(.out)
 }
 
+count_flashes <- function(input, steps, part2 = FALSE) {
+    x <- input
+    count <- 0
+    for (i in seq_len(steps)) {
+        x <- step1(x)
+        nflashes <- sum(x == 0)
+        if (part2 & nflashes == prod(dim(x))) {
+            return(i)
+        }
+        count <- count + nflashes
+    }
+    count
+}
 
-
-sampmat
-
-
-x <- read_matrix( "11/sample.txt")
-x <- x + 1
-flashing <- flashed <- x == 10
+step1 <- function(x) {
+    x <- x + 1
+    flashing <- flashed <- x == 10
+    while (any(flashing)) {
+        x <- x + add_neigh(flashing)
+        flashing <- x > 9 & !flashed
+        flashed <- flashing | flashed
+    }
+    x[x > 9] <- 0
+    x
+}
 
 
 add_neigh <- function(.x) {
@@ -117,4 +134,8 @@ add_neigh <- function(.x) {
     rbind(0, cbind(0, .x[-I, -J]))
 }
 
+x <- read_matrix("11/sample.txt")
+count_flashes(x, 200)
 
+x <- read_matrix("11/input.txt")
+count_flashes(x, 10)
