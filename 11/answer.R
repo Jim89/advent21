@@ -64,3 +64,17 @@ eval <- read_matrix("11/input.txt")
 count_flashes(eval, 100, F)
 count_flashes(eval, 1000, TRUE)
 
+show_steps <- function(x, steps = 100) {
+    out <- NULL
+    for (i in seq_len(steps) ) {
+        x <- do_step(x)
+        out[[i]] <- x
+    }
+    return(out)
+}
+
+rasters <- test |>
+    show_steps(195) |>
+    lapply(raster::raster)
+
+lapply(rasters, plot)
