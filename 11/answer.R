@@ -6,50 +6,6 @@ read_matrix <- function(.path) {
         (\(x) do.call(rbind, x))()
 }
 
-pad_mat <- function(mat) {
-    rbind(NA, cbind(NA, mat, NA), NA)
-}
-
-neighbours <- function(indices) {
-    N <- c(indices["row"] - 1, indices["col"])
-    S <- c(indices["row"] + 1, indices["col"])
-    E <- c(indices["row"], indices["col"] + 1)
-    W <- c(indices["row"], indices["col"] - 1)
-
-    NE <- c(indices["row"] - 1, indices["col"] + 1)
-    NW <- c(indices["row"] - 1, indices["col"] - 1)
-    SE <- c(indices["row"] + 1, indices["col"] + 1)
-    SW <- c(indices["row"] + 1, indices["col"] - 1)
-
-    rbind(N, S, E, W, NE, SE, SW, NW)
-}
-
-sampmat <- "11/sample.txt" |> read_matrix() |> pad_mat()
-sampmat_x <- sampmat
-
-# Set up if that cell has flashed this go round
-flashed <- !sampmat_x >= 0
-
-# A - Increase energy by 1
-sampmat_x <- sampmat_x + 1
-
-# Figure out which octopi have flashed
-flash_mask <- sampmat_x > 9
-
-# Find where they are, and mark them as having flashed
-has_flashed <- which(flash_mask, arr.ind = TRUE)
-flashed[has_flashed] <- TRUE
-
-for ( row_id in seq_len(nrow(has_flashed)) ) {
-    flashpoint <- has_flashed[row_id, ]
-    updated <- spread_flash_from_point(flashpoint, flashed, sampmat_x, has_flashed)
-    flashed <- updated$flashes
-    sampmat_x <- updated$octopi
-    has_flashed <- updated$other_flashers
-}
-
-
-
 
 count_flashes <- function(input, steps, part2 = FALSE) {
     x <- input
