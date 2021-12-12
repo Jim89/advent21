@@ -43,7 +43,6 @@ have_visited <- function(node, .visited) node %in% .visited
 # Otherwise, is it lowercase? If it is, stop, if it isn't, can visit again
 find_paths <- function(.graph, .src = "start", .tgt = "end", .path = vector(mode = "character")) {
     if (.tgt %in% .path) {
-        return(.path)
     } else {
         # Visit the source node ("start" to begin with)
         .path <- append(.path, .src)
@@ -51,19 +50,19 @@ find_paths <- function(.graph, .src = "start", .tgt = "end", .path = vector(mode
 
     if (.src == .tgt) return(.path)
 
+    .all_paths <- list()
 
     # Find the neighbours
     .neighbours <- neighbours(.graph, .src)
 
     for (.neighbour in .neighbours) {
-        if (is_lower(.neighbour) & have_visited(.neighbour, .path)) {
-            next
-        } else {
-            .path <- find_paths(.graph, .neighbour, .tgt, .path)
+        if (!have_visited(.neighbour, .path) | is_upper(.neighbour) ) {
+            .other_paths <- find_paths(.graph, .neighbour, .tgt, .path)
+            .all_paths <- append(.all_paths, list(.other_paths))
         }
     }
 
-    return(.path)
+    return(.all_paths)
 }
 
-find_paths(am, "start", "end")
+out <- find_paths(am, "start", "end")
