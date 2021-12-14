@@ -24,9 +24,6 @@ read_insertions <- function(.input) {
     .m
 }
 
-sample <- read_sample("14/sample.txt")
-insertions <- read_insertions("14/sample.txt")
-
 insert <- function(pair, rules) {
     lhs <- pair[1]
     rhs <- pair[2]
@@ -60,7 +57,7 @@ run_steps <- function(.sample, .rules, .steps = 10) {
     .sample
 }
 
-table(run_steps(sample, insertions, 10))
+
 
 most_less_least <- function(.sample, .rules, .steps = 10) {
     .out <- run_steps(.sample, .rules, .steps)
@@ -68,4 +65,15 @@ most_less_least <- function(.sample, .rules, .steps = 10) {
     max(.counts) - min(.counts)
 }
 
-most_less_least(sample, insertions, 10)
+sample_seq <- read_sample("14/sample.txt")
+sample_insertions <- read_insertions("14/sample.txt")
+most_less_least(sample_seq, sample_insertions, 10)
+most_less_least(sample_seq, sample_insertions, 40)
+
+
+input_seq <- read_sample("14/input.txt")
+input_insertions <- read_insertions("14/input.txt")
+most_less_least(input_seq, input_insertions, 10)
+
+
+
