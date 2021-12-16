@@ -82,7 +82,7 @@ parse_binary <- function(.binary, .mapping, .versions = vector("character")) {
 
     if (.t == "4") {
         .new_b <- .binary[7:length(.binary)]
-        .value <- consume(.new_b, .mapping = .mapping, .versions = .versions)
+        .versions <- consume(.new_b, .mapping = .mapping, .versions = .versions)
         return(.versions)
     } else {
         .type_id <- get_type_id(.binary)
@@ -103,3 +103,6 @@ parse_binary <- function(.binary, .mapping, .versions = vector("character")) {
 "38006F45291200" |>
     build_binary(mapping) |>
     parse_binary(mapping)
+
+
+
