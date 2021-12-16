@@ -37,34 +37,31 @@ get_type_id <- function(.binary, .mapping) .binary[[7]]
 
 get_type_0_length <- function(.binary) strtoi(paste0(.binary[8:22], collapse = ""), 2)
 
+get_type_1_length <- function(.binary) strtoi(paste0(.binary[8:18], collapse = ""), 2)
+
 get_value <- function(.binary, .mapping) {
     .x <- paste0(.binary, collapse = "")
     .padded <- stringr::str_pad(.x, 4, "left", "0")
     names(which(.mapping == .padded))
 }
 
-
-consume <- function(.binary, .out = vector("character"), .mapping, .versions) {
-
+consume <- function(.binary, .out = list(message = character(0), remainder = character(0))) {
     .next <- .binary[1:5]
 
     if ( .next[[1]] == "1") {
         .value <- .next[2:5]
-        .out <- append(.out, .value)
+        .out[["message"]] <- append(.out[["message"]], .value)
 
         .new_b <- .binary[6:length(.binary)]
-        .out <- consume(.new_b, .out, .mapping = .mapping, .versions = .versions)
-
+        .out <- consume(.new_b, .out)
     } else {
         .last_value <- .next[2:5]
-        .out <- append(.out, .last_value)
-
-        .remaining_b <- .binary[6:length(.binary)]
-
-        if (all(.remaining_b == 0)) {
-            return(.versions)
+        .out[["message"]] <- append(.out[["message"]], .last_value)
+        .rem <- .binary[6:length(.binary)]
+        if ( any(is.na(.rem)) ) {
+            .out[["remainder"]] <- append(.out[["remainder"]], "0")
         } else {
-            .out <- parse_binary(.remaining_b, .mapping, .versions)
+            .out[["remainder"]] <- append(.out[["remainder"]], .rem)
         }
 
     }
@@ -72,37 +69,110 @@ consume <- function(.binary, .out = vector("character"), .mapping, .versions) {
 }
 
 
-parse_binary <- function(.binary, .mapping, .versions = vector("character")) {
 
-    .v <- get_version(.binary, .mapping)
-    .versions <- append(.versions, .v)
-
-
-    .t <- get_type(.binary, .mapping)
+parse_packet <- function(.packet, .mapping, .pos = 1, .max_pos = 1) {
+    .t <- get_type(.packet, .mapping)
+    .v <- get_version(.packet, .mapping)
 
     if (.t == "4") {
-        .new_b <- .binary[7:length(.binary)]
-        .versions <- consume(.new_b, .mapping = .mapping, .versions = .versions)
-        return(.versions)
+        .packet_contents <- consume(.packet[7:length(.packet)])
+        .message = .packet_contents$message
+        .remainder <- .packet_contents$remainder
+        if (any(is.na(.remainder))) browser()
+        .message_decoded <- strtoi(paste0(.message, collapse = ""), 2)
+        .sub_packets <- NULL
+        .type_id <- NULL
     } else {
-        .type_id <- get_type_id(.binary)
+        .message <- NULL
+        .message_decoded <- NULL
+
+        .type_id <- get_type_id(.packet)
+
         if (.type_id == "0") {
-            .type_0_length <- get_type_0_length(.binary)
-            .new_b <- .binary[23:length(.binary)]
-            .versions <- parse_binary(.new_b, .mapping, .versions)
+
+            .type_0_length <- get_type_0_length(.packet)
+
+            .type_0_packets <- .packet[23:(22 + .type_0_length)]
+
+            .sub_packets <- parse_packet(.type_0_packets, .mapping, .max_pos = Inf)
+
+            .remainder <- .packet[(23 + .type_0_length):length(.packet)]
+
+            # Needed in case the type 0 bits flow to the end of the packet,
+            # meaning the above would "loop" around and actually we should stop,
+            # not carry on
+            if (anyNA(.remainder)) .remainder <- "0"
+
+        } else {
+            .type_1_length <- get_type_1_length(.packet)
+            .type_1_packets <- .packet[19:length(.packet)]
+            .sub_packets <- parse_packet(.type_1_packets, .mapping, .pos = 1, .max_pos = .type_1_length)
+
+            # Need to figure out remainder
+            .remainder <- .sub_packets[[length(.sub_packets)]]$remainder
+
+        }
+    }
+    .out <- list(list(
+            version = .v,
+            type = .t,
+            type_id = .type_id,
+            message_str = .message,
+            message = .message_decoded,
+            remainder = .remainder,
+            subpackets = .sub_packets
+        ))
+
+    .remainder_all_0 <- all(.remainder == 0)
+    if (is.na(.remainder_all_0)) browser()
+
+    .still_packets_to_process <- .pos != .max_pos
+    if (is.na(.still_packets_to_process)) browser()
+
+    # If there are still packets to solve (i.e. traversing, then solve them)
+    if (.still_packets_to_process & !.remainder_all_0) {
+        .out <- c(.out, parse_packet(.remainder, .mapping, .pos = .pos + 1, .max_pos = .max_pos))
+    }
+
+    return(.out)
+}
+
+get_versions <- function(.x, .versions = character(0)) {
+    .versions <- append(.versions, .x$version)
+    if (!is.null(.x$subpackets)) {
+        for (sp in .x$subpackets) {
+            .versions <- get_versions(sp, .versions)
         }
     }
     return(.versions)
 }
 
-
 "D2FE28" |>
     build_binary(mapping) |>
-    parse_binary(mapping)
+    parse_packet(mapping)
 
-"38006F45291200" |>
+x <- "38006F45291200" |>
     build_binary(mapping) |>
-    parse_binary(mapping)
+    parse_packet(mapping)
 
 
 
+y <- "EE00D40C823060" |>
+    build_binary(mapping) |>
+    parse_packet(mapping)
+
+
+
+.test <- "A0016C880162017C3686B18A3D4780" |>
+    build_binary(mapping) |>
+    parse_packet(mapping)
+
+get_versions(.test[[1]])
+
+.input <- readLines("16/input.txt")
+.ans <- .input |>
+    build_binary(mapping) |>
+    parse_packet(mapping)
+
+
+get_versions(.ans[[1]]) |> as.numeric() |> sum()
