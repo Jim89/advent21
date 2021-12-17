@@ -31,7 +31,7 @@ reaches_target <- function(velx, vely, target) {
     return(list(reaches = FALSE, yrange = y_visited))
 }
 
-find_max_y <- function(target) {
+find_velocities <- function(target) {
     velocities <- expand.grid(
         velx = seq(0, max(target$x)),
         vely = seq(min(target$y), abs(min(target$y)))
@@ -39,6 +39,11 @@ find_max_y <- function(target) {
     velocities$results <- apply(velocities, 1, \(.row) reaches_target(.row[[1]], .row[[2]], target))
     velocities$reaches <- sapply(velocities$results, `[[`, 1)
     velocities$max_y <- sapply(velocities$results, \(.res) max(.res$yrange))
+    velocities
+}
+
+find_max_y <- function(target) {
+    velocities <- find_velocities(target)
     max(velocities[velocities$reaches, "max_y"])
 }
 
@@ -46,7 +51,9 @@ find_max_y <- function(target) {
 find_max_y(sample_target)
 find_max_y(my_target)
 
-
+# Part 2
+sum(find_velocities(sample_target)[, "reaches"])
+sum(find_velocities(my_target)[, "reaches"])
 
 
 
