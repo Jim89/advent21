@@ -76,10 +76,10 @@ parse_packet <- function(.packet, .mapping, .pos = 1, .max_pos = 1) {
 
     if (.t == "4") {
         .packet_contents <- consume(.packet[7:length(.packet)])
-        .message = .packet_contents$message
+        .message = as.numeric(.packet_contents$message)
         .remainder <- .packet_contents$remainder
-        if (any(is.na(.remainder))) browser()
-        .message_decoded <- strtoi(paste0(.message, collapse = ""), 2)
+        # strtoi was causing integer overflow, hopefully this fixes the issue
+        .message_decoded <- sum((.message == 1)*2^(rev(seq_along(.message))-1))
         .sub_packets <- NULL
         .type_id <- NULL
     } else {
@@ -113,6 +113,21 @@ parse_packet <- function(.packet, .mapping, .pos = 1, .max_pos = 1) {
 
         }
     }
+    #if (.t == "1") browser()
+    .value <- switch(
+        .t,
+        "4" = .message_decoded,
+        "0" = sum( sapply(.sub_packets, \(x) x[["value"]]) ),
+        "1" = prod( sapply(.sub_packets, \(x) x[["value"]]) ),
+        "2" = min( sapply(.sub_packets, \(x) x[["value"]]) ),
+        "3" = max( sapply(.sub_packets, \(x) x[["value"]]) ),
+        "5" = as.numeric(.sub_packets[[1]]$value > .sub_packets[[2]]$value),
+        "6" = as.numeric(.sub_packets[[1]]$value < .sub_packets[[2]]$value),
+        "7" = as.numeric(.sub_packets[[1]]$value == .sub_packets[[2]]$value)
+    )
+
+    if (is.na(.value)) browser()
+
     .out <- list(list(
             version = .v,
             type = .t,
@@ -120,7 +135,8 @@ parse_packet <- function(.packet, .mapping, .pos = 1, .max_pos = 1) {
             message_str = .message,
             message = .message_decoded,
             remainder = .remainder,
-            subpackets = .sub_packets
+            subpackets = .sub_packets,
+            value = .value
         ))
 
     .remainder_all_0 <- all(.remainder == 0)
@@ -137,14 +153,14 @@ parse_packet <- function(.packet, .mapping, .pos = 1, .max_pos = 1) {
     return(.out)
 }
 
-get_versions <- function(.x, .versions = character(0)) {
-    .versions <- append(.versions, .x$version)
+get_stuff <- function(.x, .what = "version", .stuff = character(0)) {
+    .stuff <- append(.stuff, .x[[.what]])
     if (!is.null(.x$subpackets)) {
         for (sp in .x$subpackets) {
-            .versions <- get_versions(sp, .versions)
+            .stuff <- get_stuff(sp, .what, .stuff)
         }
     }
-    return(.versions)
+    return(.stuff)
 }
 
 "D2FE28" |>
@@ -167,12 +183,21 @@ y <- "EE00D40C823060" |>
     build_binary(mapping) |>
     parse_packet(mapping)
 
-get_versions(.test[[1]])
+get_stuff(.test[[1]])
+
+
+tests <- c("C200B40A82", "04005AC33890", "880086C3E88112", "CE00C43D881120", "D8005AC2A8F0", "F600BC2D8F", "9C005AC2F8F0", "9C0141080250320F1802104A08")
+expected <- c(3, 54, 7, 9, 1, 0, 0, 1)
+actual <- sapply(tests, \(.str) .str |> build_binary(mapping) |> parse_packet(mapping) |> (\(x) x[[1]]$value)()  )
+all(expected == actual)
+
+
+
 
 .input <- readLines("16/input.txt")
-.ans <- .input |>
+x <- .input |>
     build_binary(mapping) |>
     parse_packet(mapping)
 
-
-get_versions(.ans[[1]]) |> as.numeric() |> sum()
+options(scipen = 999)
+x[[1]]$value
