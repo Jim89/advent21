@@ -201,3 +201,83 @@ x <- .input |>
 
 options(scipen = 999)
 x[[1]]$value
+
+
+# Plotting (for fun) ------------------------------------------------------
+
+library(igraph)
+
+get_vertex <- function(.x) {
+    vertex(
+        version = .x[["version"]],
+        type = .x[["type"]],
+        type_id = if (is.null(.x[["type_id"]])) NA_character_ else .x[["type_id"]],
+        value = .x[["value"]]
+    )
+}
+
+build_tree <- function(x, graph = igraph::graph(NULL), nodes = 0) {
+    if (nodes == 0) {
+        v <- get_vertex(x)
+        graph <- graph + v
+        nodes <- gorder(graph)
+    }
+
+    if (!is.null(x[["subpackets"]])) {
+        sp_id <- nodes + 1
+        for (sp in x[["subpackets"]]) {
+            v_sp <- get_vertex(sp)
+            graph <- graph + v_sp
+            just_added <- gorder(graph)
+            graph <- graph + edge(c(nodes, just_added))
+            sp_id <- gorder(graph)
+            graph <- build_tree(sp, graph, sp_id)
+        }
+    }
+    return(graph)
+}
+
+library(ggraph)
+library(tidygraph)
+
+.g <- x[[1]] |>
+    build_tree() |>
+    as_tbl_graph() |>
+    mutate(
+        neighbours = centrality_degree(),
+        type_id = ifelse(is.na(type_id), "literal", as.character(type_id))
+    )
+
+.g |>
+    ggraph(layout = "tree") +
+    geom_edge_diagonal() +
+    geom_node_point(aes(colour = type_id)) +
+    theme_graph() +
+    theme(legend.position = "top")
+
+.g |>
+    ggraph(layout = "dendrogram") +
+    geom_edge_diagonal() +
+    geom_node_point(aes(colour = type_id)) +
+    theme_graph()
+
+
+.g |>
+    ggraph(layout = "treemap") +
+    geom_edge_link() +
+    geom_node_point(aes(colour = type_id, size = neighbours)) +
+    theme_graph()
+
+ggraph(.g, 'circlepack') +
+    geom_node_circle(aes(fill = type_id), colour = "white", size = .5) +
+    coord_fixed()
+
+
+nodse <- .g |> as_tibble() |> mutate(node_id = dplyr::row_number()) |> select(node_id, dplyr::everything())
+edges <- .g |> activate("edges") |> as_tibble()
+
+readr::write_csv(nodse, "16/nodes.csv")
+readr::write_csv(edges, "16/edges.csv")
+
+
+
