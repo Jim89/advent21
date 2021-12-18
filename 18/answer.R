@@ -101,6 +101,28 @@ reduce_sf_pair <- function(first, second) {
     reduce_once(joined)
 }
 
+magnitude <- function(number) {
+    pair_pattern <- "\\[\\d+,\\d+\\]"
+
+    # Find all the "raw" pairs, and turn them into numbers
+    pairs <- stringr::str_extract_all(number, pair_pattern)[[1]]
+    numbers <- sapply(pairs, \(pair) {
+        pair_numbers <- as.numeric(stringr::str_extract_all(pair, "\\d+")[[1]])
+        (3 * pair_numbers[[1]]) + (2 * pair_numbers[[2]])
+
+    })
+
+    # cbind(numbers_split, c(numbers, "")) to understand
+    numbers_split <- strsplit(number, pair_pattern)[[1]]
+    mag <- paste0(numbers_split, c(numbers, ""), collapse = "")
+
+    # If there are still list elements left ([ in the string), recurse
+    if (stringr::str_detect(mag, "\\[")) mag <- magnitude(mag)
+
+    # Return the number
+    mag
+}
+
 
 # Tests -------------------------------------------------------------------
 explode_sf("[[[[[9,8],1],2],3],4]", 5) == "[[[[0,9],2],3],4]"
@@ -131,3 +153,47 @@ test_lines <- c("[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]"
 purrr::reduce(test_lines, reduce_sf_pair) == "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
 
 
+magnitude("[[1,2],[[3,4],5]]") == "143"
+magnitude("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]") == "1384"
+magnitude("[[[[1,1],[2,2]],[3,3]],[4,4]]") == "445"
+magnitude("[[[[3,0],[5,3]],[4,4]],[5,5]]") == "791"
+magnitude("[[[[5,0],[7,4]],[5,5]],[6,6]]") == "1137"
+magnitude("[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]") == "3488"
+
+
+test_lines_2 <- c(
+     "[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]"
+    ,"[[[5,[2,8]],4],[5,[[9,9],0]]]"
+    ,"[6,[[[6,2],[5,6]],[[7,6],[4,7]]]]"
+    ,"[[[6,[0,7]],[0,9]],[4,[9,[9,0]]]]"
+    ,"[[[7,[6,4]],[3,[1,3]]],[[[5,5],1],9]]"
+    ,"[[6,[[7,3],[3,2]]],[[[3,8],[5,7]],4]]"
+    ,"[[[[5,4],[7,7]],8],[[8,3],8]]"
+    ,"[[9,3],[[9,9],[6,[4,9]]]]"
+    ,"[[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]"
+    ,"[[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]"
+)
+
+out <- purrr::reduce(test_lines_2, reduce_sf_pair)
+out == "[[[[6,6],[7,6]],[[7,7],[7,0]]],[[[7,7],[7,7]],[[7,8],[9,9]]]]"
+magnitude(out) == 4140
+
+
+# Part 1
+my_input <- readLines("18/input.txt")
+out <- purrr::reduce(my_input, reduce_sf_pair)
+magnitude(out)
+
+
+# Part 2
+combos <- expand.grid(x = test_lines_2, y = test_lines_2)
+combos <- combos[!combos$x == combos$y, ]
+combos$reduced <- apply(combos, 1, \(row) reduce_sf_pair(row[[1]], row[[2]]))
+combos$mag <- apply(combos, 1, \(row) magnitude(row[[3]]))
+max(as.numeric(combos$mag))
+
+my_combos <- expand.grid(x = my_input, y = my_input)
+my_combos <- my_combos[!my_combos$x == my_combos$y, ]
+my_combos$reduced <- apply(my_combos, 1, \(row) reduce_sf_pair(row[[1]], row[[2]]))
+my_combos$mag <- apply(my_combos, 1, \(row) magnitude(row[[3]]))
+max(as.numeric(my_combos$mag))
