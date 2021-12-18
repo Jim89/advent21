@@ -59,7 +59,31 @@ explode <- function(sf_number, pair_location, debug = F) {
     }
 
     new <- paste0(left_updated, "0", right_updated)
+    if (stringr::str_detect(new, "\\[\\d{1,2}\\]")) browser()
+    reduce_once(new)
+}
 
+
+
+split_locations <- function(sf_number) {
+    # Splits are anywhere number is >= 10, i.e. 2 digits (not more, because
+    # we'll split them!)
+    stringr::str_locate_all(sf_number, "\\d{2}")[[1]][, "start"]
+}
+
+split_sf <- function(sf_number, split_location) {
+    left_of_split_point <- substr(sf_number, 1, split_location - 1)
+    right_of_split_point <- substr(sf_number, split_location + 2, nchar(sf_number))
+    number_to_split <- as.numeric(substr(sf_number, split_location, split_location + 1))
+
+    lhs <- floor(number_to_split / 2)
+    rhs <- ceiling(number_to_split / 2)
+
+    new_pair_to_insert <- join_lines(lhs, rhs)
+
+    new <- paste0(left_of_split_point, join_lines(lhs, rhs), right_of_split_point)
+    if (stringr::str_detect(new, "\\[\\d{1,2}\\]")) browser()
+    reduce_once(new)
 }
 
 
@@ -68,5 +92,47 @@ reduce_once <- function(sf_number) {
     exp_loc <- explode_locations(sf_number)
     split_loc <- split_locations(sf_number)
 
+    if (length(exp_loc) > 0) {
+        explode_sf(sf_number, exp_loc[[1]])
+    } else if (length(split_loc) > 0) {
+        split_sf(sf_number, split_loc[[1]])
+    } else {
+        sf_number
+    }
 }
+
+reduce_sf_pair <- function(first, second) {
+    joined <- join_lines(first, second)
+    reduce_once(joined)
+}
+
+
+# Tests -------------------------------------------------------------------
+explode_sf("[[[[[9,8],1],2],3],4]", 5) == "[[[[0,9],2],3],4]"
+explode_sf("[7,[6,[5,[4,[3,2]]]]]", 13) == "[7,[6,[5,[7,0]]]]"
+explode_sf("[[6,[5,[4,[3,2]]]],1]", 11) == "[[6,[5,[7,0]]],3]"
+explode_sf("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]", 11) == "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]" # Recurses, so don't expect to pass
+explode_sf("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]", 25) == "[[3,[2,[8,0]]],[9,[5,[7,0]]]]"
+
+# Sample pair
+reduce_sf_pair("[[[[4,3],4],4],[7,[[8,4],9]]]", "[1,1]") == "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"
+
+purrr::reduce(c("[1,1]" ,"[2,2]" ,"[3,3]" ,"[4,4]"), reduce_sf_pair) == "[[[[1,1],[2,2]],[3,3]],[4,4]]"
+purrr::reduce(c("[1,1]" ,"[2,2]" ,"[3,3]" ,"[4,4]", "[5,5]"), reduce_sf_pair) == "[[[[3,0],[5,3]],[4,4]],[5,5]]"
+purrr::reduce(c("[1,1]" ,"[2,2]" ,"[3,3]" ,"[4,4]", "[5,5]", "[6,6]"), reduce_sf_pair) == "[[[[5,0],[7,4]],[5,5]],[6,6]]"
+
+test_lines <- c("[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]"
+,"[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]"
+,"[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]"
+,"[[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]"
+,"[7,[5,[[3,8],[1,4]]]]"
+,"[[2,[2,2]],[8,[8,1]]]"
+,"[2,9]"
+,"[1,[[[9,3],9],[[9,0],[0,7]]]]"
+,"[[[5,[7,4]],7],1]"
+,"[[[[4,2],2],6],[8,7]]"
+)
+
+purrr::reduce(test_lines, reduce_sf_pair) == "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
+
 
