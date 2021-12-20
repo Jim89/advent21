@@ -19,10 +19,10 @@ cleanup <- function(line) {
     as.numeric(clean[[1]])
 }
 
-extend_image <- function(image, i = 1) {
+extend_image <- function(image, i = 1, pad_with = 0) {
     .extend_image <- function(image) {
-        new_row <- rep(0, ncol(image))
-        new_col <- rep(0, nrow(image) + 2)
+        new_row <- rep(pad_with, ncol(image))
+        new_col <- rep(pad_with, nrow(image) + 2)
 
         .out <- cbind(new_col, rbind(new_row, image, new_row), new_col)
         rownames(.out) <- colnames(.out) <- NULL
@@ -40,7 +40,7 @@ extend_image <- function(image, i = 1) {
 
 
 
-enhance_once <- function(image, algo, debug = F) {
+enhance_once <- function(image, algo) {
     out <- matrix(0, nrow(image), ncol(image))
     for (row in seq(2, nrow(image)  - 1)) {
         for (col in seq(2, ncol(image) - 1)) {
@@ -76,4 +76,14 @@ sample_input <- get_input("20/sample.txt")
 sample_input |>
     enhance(sample_algo, 2) |>
     sum()
+
+algo <- get_algorithm("20/input.txt")
+input <- get_input("20/input.txt")
+
+input |> enhance(algo, 2) |> sum() # 5483 for me
+
+# Part 2
+sample_input |> enhance(sample_algo, 50) |> sum() # 3351
+
+input |> enhance(algo, 50) |> sum()
 
