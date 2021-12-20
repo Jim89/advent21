@@ -64,7 +64,11 @@ enhance_once <- function(image, algo, pad_with = 0) {
 
 enhance <- function(image, algo, times = 1) {
     for (iter in seq_len(times)) {
-        pad_with <- if (iter %% 2 == 0) 1 else 0
+        if (!algo[1]) {
+            pad_with <- algo[1]
+        } else {
+            pad_with <- if (iter %% 2 == 0) 1 else 0
+        }
         # Something around filling in with the first character of the algo,
         # depending on whether the iteration is 1st, 2nd, 3rd, (even) etc
         enhanced <- enhance_once(image, algo, pad_with = pad_with)
@@ -88,7 +92,7 @@ input |> enhance(algo, 2) |> sum() # 5483 is correct for me
 # Part 2
 sample_input |> enhance(sample_algo, 50) |> sum() # 3351
 
-input |> enhance(algo, 50) |> sum() # Current answer: 20330, but this is wrong
+input |> enhance(algo, 50) |> sum() # 18732
 
 
 
