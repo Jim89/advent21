@@ -59,9 +59,11 @@ enhance_once <- function(image, algo, pad_with = 0) {
 
 enhance <- function(image, algo, times = 1) {
     for (iter in seq_len(times)) {
-        if (!algo[1]) {
-            pad_with <- algo[1]
+        if (algo[1] == 0) {
+            # If all ./0's stay "off", then can always pad with 0
+            pad_with <- 0
         } else {
+            # Otherwise, the infinite expanse switches on/off on each subsequent step
             pad_with <- if (iter %% 2 == 0) 1 else 0
         }
         enhanced <- enhance_once(image, algo, pad_with = pad_with)
