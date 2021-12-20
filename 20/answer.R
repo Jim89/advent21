@@ -19,7 +19,7 @@ cleanup <- function(line) {
     as.numeric(clean[[1]])
 }
 
-extend_image <- function(image, i = 1, pad_with = 0) {
+extend_image <- function(image, pad_with = 0) {
     .extend_image <- function(image) {
         new_row <- rep(pad_with, ncol(image))
         new_col <- rep(pad_with, nrow(image) + 2)
@@ -29,19 +29,14 @@ extend_image <- function(image, i = 1, pad_with = 0) {
         .out
     }
 
-    for (j in seq_len(i)) {
-        image <- .extend_image(image)
-    }
-    return(image)
+    image |>
+        .extend_image() |>
+        .extend_image()
 }
 
 
-
-
-
-
 enhance_once <- function(image, algo, pad_with = 0) {
-    image <- extend_image(image, i = 3, pad_with = pad_with)
+    image <- extend_image(image, pad_with = pad_with)
 
     out <- matrix(0, nrow(image), ncol(image))
 
@@ -69,8 +64,6 @@ enhance <- function(image, algo, times = 1) {
         } else {
             pad_with <- if (iter %% 2 == 0) 1 else 0
         }
-        # Something around filling in with the first character of the algo,
-        # depending on whether the iteration is 1st, 2nd, 3rd, (even) etc
         enhanced <- enhance_once(image, algo, pad_with = pad_with)
         image <- enhanced
     }
