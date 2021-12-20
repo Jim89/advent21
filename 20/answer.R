@@ -29,31 +29,35 @@ extend_image <- function(image, pad_with = 0) {
         .out
     }
 
+    # Extend it twice, to make it easier to grab the 9 cells around & including
+    # a given point
     image |>
         .extend_image() |>
         .extend_image()
 }
 
-
 enhance_once <- function(image, algo, pad_with = 0) {
     image <- extend_image(image, pad_with = pad_with)
 
     out <- matrix(0, nrow(image), ncol(image))
-
+    # Only loop from 2nd row/col, to ignore the outer edge where finding the
+    # 9-cell region is annoying
     for (row in seq(2, nrow(image)  - 1)) {
         for (col in seq(2, ncol(image) - 1)) {
-            above <- image[row - 1, c(col - 1, col, col + 1), drop = TRUE]
-            containing <- image[row, c(col - 1, col, col + 1), drop = TRUE]
-            below <- image[row + 1, c(col - 1, col, col + 1), drop = TRUE]
+            col_indices <- c(col - 1, col, col + 1)
+            above <- image[row - 1, col_indices, drop = TRUE]
+            containing <- image[row, col_indices, drop = TRUE]
+            below <- image[row + 1, col_indices, drop = TRUE]
 
             number_str <- paste0(c(above, containing, below), collapse = "")
             number <- strtoi(number_str, 2)
 
-            value <- algo[number + 1] # assumes 0-indexed, but not in R!
+            value <- algo[number + 1] # assumes 0-indexed, but not in R, so add 1!
 
             out[row, col] <- value
         }
     }
+    # Chop the outer border that we didn't update/don't care about
     out[-c(1, nrow(out)), -c(1, ncol(out))]
 }
 
