@@ -40,8 +40,11 @@ extend_image <- function(image, i = 1, pad_with = 0) {
 
 
 
-enhance_once <- function(image, algo) {
+enhance_once <- function(image, algo, pad_with = 0) {
+    image <- extend_image(image, i = 3, pad_with = pad_with)
+
     out <- matrix(0, nrow(image), ncol(image))
+
     for (row in seq(2, nrow(image)  - 1)) {
         for (col in seq(2, ncol(image) - 1)) {
             above <- image[row - 1, c(col - 1, col, col + 1), drop = TRUE]
@@ -56,13 +59,15 @@ enhance_once <- function(image, algo) {
             out[row, col] <- value
         }
     }
-    out
+    out[-c(1, nrow(out)), -c(1, ncol(out))]
 }
 
 enhance <- function(image, algo, times = 1) {
     for (iter in seq_len(times)) {
-        if (iter == 1) extended <- extend_image(image, 2) else extended <- extend_image(image)
-        enhanced <- enhance_once(extended, algo)
+        pad_with <- if (iter %% 2 == 0) 1 else 0
+        # Something around filling in with the first character of the algo,
+        # depending on whether the iteration is 1st, 2nd, 3rd, (even) etc
+        enhanced <- enhance_once(image, algo, pad_with = pad_with)
         image <- enhanced
     }
     image
@@ -73,17 +78,19 @@ enhance <- function(image, algo, times = 1) {
 sample_algo <- get_algorithm("20/sample.txt")
 sample_input <- get_input("20/sample.txt")
 
-sample_input |>
-    enhance(sample_algo, 2) |>
-    sum()
+sample_input |> enhance(sample_algo, 2) |> sum() # 35
+
 
 algo <- get_algorithm("20/input.txt")
 input <- get_input("20/input.txt")
-
-input |> enhance(algo, 2) |> sum() # 5483 for me
+input |> enhance(algo, 2) |> sum() # 5483 is correct for me
 
 # Part 2
 sample_input |> enhance(sample_algo, 50) |> sum() # 3351
 
-input |> enhance(algo, 50) |> sum()
+input |> enhance(algo, 50) |> sum() # Current answer: 20330, but this is wrong
+
+
+
+
 
