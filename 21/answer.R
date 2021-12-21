@@ -17,13 +17,13 @@ make_rolls <- function(n = 10000) {
     out
 }
 
-play <- function(starts) {
+play <- function(starts, win_at = 1000) {
     player1_pos <- starts["player1"]
     player2_pos <- starts["player2"]
 
     p1_score <- p2_score <- 0
 
-    winner <- p1_score >= 1000 || p2_score >= 1000
+    winner <- p1_score >= win_at || p2_score >= win_at
 
     rolls <- make_rolls(5000)
     nrolls <- 0
@@ -47,7 +47,7 @@ play <- function(starts) {
         }
         i <- i + 1
         nrolls <- nrolls + 3
-        winner <- p1_score >= 1000 || p2_score >= 1000
+        winner <- p1_score >= win_at || p2_score >= win_at
         if (winner) break
     }
     return(list(iters = i, p1_score = p1_score, p2_score = p2_score, n_rolls = nrolls))
@@ -56,7 +56,9 @@ play <- function(starts) {
 
 # Part 1
 sample_result <- "21/sample.txt" |> get_starts() |> play()
-min(sample_result$p1_score, sample_result$p2_score) * sample_result$n_rolls
+min(sample_result$p1_score, sample_result$p2_score) * sample_result$n_rolls # 739785
 
 result <- "21/input.txt" |> get_starts() |> play()
-min(result$p1_score, result$p2_score) * result$n_rolls
+min(result$p1_score, result$p2_score) * result$n_rolls # 752745
+
+
