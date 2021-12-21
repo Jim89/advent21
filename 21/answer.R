@@ -62,3 +62,44 @@ result <- "21/input.txt" |> get_starts() |> play()
 min(result$p1_score, result$p2_score) * result$n_rolls # 752745
 
 
+# Part 2
+rolls <- expand.grid(d1 = 1:3, d2 = 1:3, d3 = 1:3)
+potential_values <- c(0, 0, table(rowSums(rolls)))
+cache <- list()
+
+dirac_dice <- function(p1, p2, s1 = 0, s2 = 0, turn = 1, cnt = 1) {
+    cache_name <- paste(p1, p2, s1, s2, turn)
+    if (cache_name %in% names(cache)) {
+        cache[[cache_name]] * cnt
+    } else {
+        rowSums(
+            sapply(9:3, \(x) {
+                if (turn == 1) {
+                    p1 <- (p1 + x) %% 10; if (p1 == 0) p1 <- 10; s1 <- s1 + p1
+                } else {
+                    p2 <- (p2 + x) %% 10; if (p2 == 0) p2 <- 10; s2 <- s2 + p2
+                }
+
+                if (s1 >= 21 || s2 >= 21) {
+                    cnt * potential_values[[x]] * as.numeric(turn == c(1, 2))
+                } else {
+                    value <- dirac_dice(p1, p2, s1, s2, 3 - turn, cnt * potential_values[[x]])
+                    cache_name <- paste(p1, p2, s1, s2, 3 - turn)
+                    if (!cache_name %in% names(cache)) {
+                        cache[[cache_name]] <<- value / cnt / potential_values[[x]]
+                    }
+                    value
+                }
+            })
+        )
+    }
+}
+
+sample_starts <- get_starts("21/sample.txt")
+
+sample_out <- dirac_dice(sample_starts["player1"], sample_starts["player2"])
+
+cache <- list()
+starts <- get_starts("21/input.txt")
+my_out <- dirac_dice(starts[["player1"]], starts[["player2"]])
+my_out
