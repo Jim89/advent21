@@ -101,5 +101,5 @@ sample_out <- dirac_dice(sample_starts["player1"], sample_starts["player2"])
 
 cache <- list()
 starts <- get_starts("21/input.txt")
-my_out <- dirac_dice(starts[["player1"]], starts[["player2"]])
+my_out <- dirac_dice(starts[["player1"]], starts[["player2"]]) # 309196008717909
 my_out
