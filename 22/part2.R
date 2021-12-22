@@ -65,6 +65,10 @@ build_ranges <- function(ranges) {
             new_ranges[[put_at]] <- current_instruction
         }
 
+        # This is getting closer, but I'm missing something about how to avoid
+        # adding duplicate correcting/compensating rules if the instruction
+        # overlaps with several of the existing rules
+
         for (prev_instruction_index in seq_along(prev_instructions)) {
 
             prior_instruction <- prev_instructions[[prev_instruction_index]]
